@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useState, useRef } from "react";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { ChefHat, Bookmark, LogOut, User, ChevronDown, RefrigeratorIcon } from "lucide-react";
 import type { Recipe, FridgeItem } from "./data";
 import { SAMPLE_FRIDGE_ITEMS } from "./data";
@@ -13,6 +13,9 @@ import RecipeDetail from "./components/RecipeDetail";
 type Page = "home" | "recipes" | "favorites" | "fridge" | "auth";
 
 function AppInner() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const [page, setPage] = useState<Page>("home");
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -28,10 +31,9 @@ function AppInner() {
   const toggleSave = (id: number) =>
     setSavedIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
-  const goTo = (p: Page) => {
-    setSelectedRecipe(null);
-    setPrevPage(page);
-    setPage(p);
+  const goTo = (path: string) => {
+  setSelectedRecipe(null);
+  navigate(path);
   };
 
   const openRecipe = (recipe: Recipe, query: string[] = []) => {
@@ -48,16 +50,16 @@ function AppInner() {
     return days <= 3;
   }).length;
 
-  const navItems: { key: Page; label: string; icon?: React.ReactNode; badge?: number }[] = [
-    { key: "home", label: "홈" },
-    { key: "fridge", label: "냉장고", icon: <RefrigeratorIcon className="w-3.5 h-3.5" />, badge: soonOrExpired },
-    { key: "recipes", label: "레시피" },
-    { key: "favorites", label: "즐겨찾기" },
+  const navItems: { key: string; label: string; icon?: React.ReactNode; badge?: number }[] = [
+    { key: "/", label: "홈" },
+    { key: "/fridge", label: "냉장고", icon: <RefrigeratorIcon className="w-3.5 h-3.5" />, badge: soonOrExpired },
+    { key: "/recipes", label: "레시피" },
+    { key: "/favorites", label: "즐겨찾기" },
   ];
 
   const handleLogin = (name: string, email: string) => {
-    setUser({ name, email });
-    goTo(prevPage);
+  setUser({ name, email });
+  navigate("/");
   };
 
   const addFridgeItem = (item: Omit<FridgeItem, "id" | "addedAt">) => {
@@ -71,7 +73,7 @@ function AppInner() {
 
   const handleFridgeSearchRecipes = (ingredients: string[]) => {
     setFridgeSearchIngredients(ingredients);
-    goTo("home");
+    goTo("/");
   };
 
   const handleLogout = () => {
@@ -108,7 +110,7 @@ function AppInner() {
       <nav className="sticky top-0 z-50 bg-white border-b border-border">
         <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
           {/* Logo */}
-          <button onClick={() => goTo("home")} className="flex items-center gap-2">
+          <button onClick={() => goTo("/")} className="flex items-center gap-2">
             <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
               <ChefHat className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
@@ -122,7 +124,7 @@ function AppInner() {
                 key={key}
                 onClick={() => goTo(key)}
                 className={`relative flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-lg font-medium transition-colors ${
-                  page === key
+                  location.pathname === key
                     ? "text-primary bg-primary/8"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
@@ -134,7 +136,7 @@ function AppInner() {
                     {badge}
                   </span>
                 )}
-                {key === "favorites" && savedIds.length > 0 && (
+                {key === "/favorites" && savedIds.length > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                     {savedIds.length}
                   </span>
@@ -147,7 +149,7 @@ function AppInner() {
           <div className="flex items-center gap-1">
             {/* Mobile favorites */}
             <button
-              onClick={() => goTo("favorites")}
+              onClick={() => goTo("/favorites")}
               className="sm:hidden relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Bookmark className="w-4 h-4" />
@@ -193,7 +195,7 @@ function AppInner() {
               </div>
             ) : (
               <button
-                onClick={() => goTo("auth")}
+                onClick={() => goTo("/auth")}
                 className="text-sm font-semibold bg-primary text-white px-4 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
               >
                 로그인
@@ -204,37 +206,54 @@ function AppInner() {
       </nav>
 
       {/* Page content */}
-      {page === "home" && (
-        <HomePage
-          savedIds={savedIds}
-          onToggleSave={toggleSave}
-          onSelectRecipe={(r) => openRecipe(r)}
-          initialIngredients={fridgeSearchIngredients}
-          onClearInitialIngredients={() => setFridgeSearchIngredients(null)}
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <HomePage
+              savedIds={savedIds}
+              onToggleSave={toggleSave}
+              onSelectRecipe={(r) => openRecipe(r)}
+              initialIngredients={fridgeSearchIngredients}
+              onClearInitialIngredients={() => setFridgeSearchIngredients(null)}
+            />
+          }
         />
-      )}
-      {page === "recipes" && (
-        <RecipesPage
-          savedIds={savedIds}
-          onToggleSave={toggleSave}
-          onSelectRecipe={(r) => openRecipe(r)}
-        />
-      )}
-      {page === "favorites" && (
-        <FavoritesPage
-          savedIds={savedIds}
-          onToggleSave={toggleSave}
-          onSelectRecipe={(r) => openRecipe(r)}
-        />
-      )}
-      {page === "fridge" && (
-        <FridgePage
-          items={fridgeItems}
-          onAdd={addFridgeItem}
-          onDelete={deleteFridgeItem}
-          onSearchRecipes={handleFridgeSearchRecipes}
-        />
-      )}
+
+      <Route
+        path="/recipes"
+        element={
+          <RecipesPage
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
+            onSelectRecipe={(r) => openRecipe(r)}
+          />
+        }
+      />
+
+      <Route
+        path="/favorites"
+        element={
+          <FavoritesPage
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
+            onSelectRecipe={(r) => openRecipe(r)}
+          />
+        }
+      />
+
+      <Route
+        path="/fridge"
+        element={
+          <FridgePage
+            items={fridgeItems}
+            onAdd={addFridgeItem}
+            onDelete={deleteFridgeItem}
+            onSearchRecipes={handleFridgeSearchRecipes}
+          />
+        }
+      />
+</Routes>
     </div>
   );
 }
