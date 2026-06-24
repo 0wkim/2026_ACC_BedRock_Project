@@ -1,3 +1,4 @@
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useState, useRef } from "react";
 import { ChefHat, Bookmark, LogOut, User, ChevronDown, RefrigeratorIcon } from "lucide-react";
 import type { Recipe, FridgeItem } from "./data";
@@ -11,7 +12,7 @@ import RecipeDetail from "./components/RecipeDetail";
 
 type Page = "home" | "recipes" | "favorites" | "fridge" | "auth";
 
-export default function App() {
+function AppInner() {
   const [page, setPage] = useState<Page>("home");
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -235,5 +236,12 @@ export default function App() {
         />
       )}
     </div>
+  );
+}
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppInner />
+    </BrowserRouter>
   );
 }
